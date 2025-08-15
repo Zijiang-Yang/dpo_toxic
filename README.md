@@ -19,10 +19,11 @@ To re-create any of our figures, see `./toxicity/eval_interventions/figures`.
 
 To train your own dpo model:
 ```
-cd toxicity/train_dpo
-python train.py exp_name="[name of your experiment]"
+cd toxicity
+python -m toxicity.train_dpo.train exp_name="toxic_org"
 ```
-
+## Data:
+gdown --folder https://drive.google.com/drive/folders/1baArqcjIc2Q4OllLVUz1hp3p3XxmdteK
 
 ## How to Cite
 

@@ -15,6 +15,8 @@ import hydra
 from omegaconf import OmegaConf, DictConfig
 import wandb
 
+from dpo_vae import MyLatentDPOModel 
+
 import toxicity.train_dpo.trainers as trainers
 from toxicity.train_dpo.dpo_utils import (
     get_local_dir,
@@ -119,25 +121,45 @@ def main(config: DictConfig):
         {"device_map": "balanced"} if config.trainer == "BasicTrainer" else {}
     )
     policy_dtype = getattr(torch, config.model.policy_dtype)
-    policy = transformers.AutoModelForCausalLM.from_pretrained(
-        config.model.name_or_path,
-        cache_dir=get_local_dir(config.local_dirs),
-        low_cpu_mem_usage=True,
-        torch_dtype=policy_dtype,
-        **model_kwargs,
-    )
+
+    # Original
+    # policy = transformers.AutoModelForCausalLM.from_pretrained(
+    #     config.model.name_or_path,
+    #     cache_dir=get_local_dir(config.local_dirs),
+    #     low_cpu_mem_usage=True,
+    #     torch_dtype=policy_dtype,
+    #     **model_kwargs,
+    # )
+
+    # VAE
+    
+    policy = MyLatentDPOModel(
+        latent_dim=64,
+        gpt2_model_name=config.model.name_or_path,
+        vae_checkpoint_path="vae_warmup.pth"
+    ).to(dtype=policy_dtype)
+
     disable_dropout(policy)
 
     if config.loss.name == "dpo":
         print("building reference model")
         reference_model_dtype = getattr(torch, config.model.reference_dtype)
-        reference_model = transformers.AutoModelForCausalLM.from_pretrained(
-            config.model.name_or_path,
-            cache_dir=get_local_dir(config.local_dirs),
-            low_cpu_mem_usage=True,
-            torch_dtype=reference_model_dtype,
-            **model_kwargs,
-        )
+
+        # Original
+        # reference_model = transformers.AutoModelForCausalLM.from_pretrained(
+        #     config.model.name_or_path,
+        #     cache_dir=get_local_dir(config.local_dirs),
+        #     low_cpu_mem_usage=True,
+        #     torch_dtype=reference_model_dtype,
+        #     **model_kwargs,
+        # )
+
+        # VAE
+        reference_model = MyLatentDPOModel(
+            latent_dim=64,
+            gpt2_model_name=config.model.name_or_path,
+            vae_checkpoint_path="vae_warmup.pth"
+        ).to(dtype=reference_model_dtype)
         disable_dropout(reference_model)
     else:
         reference_model = None
